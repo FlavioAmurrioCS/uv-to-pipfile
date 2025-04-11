@@ -4,5 +4,4 @@
   entry: uv-to-pipfile
   language: python
   files: uv.lock
-  additional_dependencies:
-    - tomli
+  always_run: true

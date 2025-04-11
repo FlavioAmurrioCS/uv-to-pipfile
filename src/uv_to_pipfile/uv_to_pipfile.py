@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 
 if os.getenv("GET_VENV") == "1":
@@ -191,6 +192,24 @@ def parse_args(args: list[str] | None) -> tuple[str, str]:
         raise SystemExit(1)
     return uv_lock, pipfile_lock
 
+def python_version(uv_lock: str ) -> str:
+    basedir = os.path.dirname(uv_lock)
+    python_version_file = os.path.join(basedir, ".python_version")
+    if os.path.exists(python_version_file):
+        with open(python_version_file) as f:
+            return f.read().strip()
+
+    data: UVLock = load_toml(uv_lock)
+    if "requires-python" in data:
+        pattenr = re.compile(r"3\.(\d+)")
+        match = pattenr.search(data["requires-python"])
+        if match:
+            version = match.group(1)
+            if version.isdigit():
+                return f"3.{version}"
+    return "3.11"
+
+
 
 def main(args: list[str] | None = None) -> int:  # noqa: C901, PLR0912
     uv_lock, pipfile_lock = parse_args(args)
@@ -219,12 +238,18 @@ def main(args: list[str] | None = None) -> int:  # noqa: C901, PLR0912
         return 1
     virtual_package = virtual_packages.popitem()[1]
 
+    registry = {x["source"]["registry"] for x in registry_packages.values()}
+    if len(registry) != 1:
+        print(f"Expected exactly one registry, got {len(registry)}")
+
+    selected_registry = registry.pop()
+
     pipfile_lock_data: Final = {
         "_meta": {
             "hash": {"sha256": "UVLOCK"},
             "pipfile-spec": 6,
-            "requires": {"python_version": data["requires-python"]},
-            "sources": [{"name": "pypi", "url": "https://pypi.org/simple", "verify_ssl": True}],
+            "requires": {"python_version": python_version(uv_lock)},
+            "sources": [{"name": "pypi", "url": selected_registry, "verify_ssl": True}],
         },
         "default": {},
         "develop": {},
