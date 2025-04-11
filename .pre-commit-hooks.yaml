@@ -1,0 +1,8 @@
+- id: uv-to-pipfile
+  name: Convert .uv files to Pipfile
+  description: Convert .uv files to Pipfile
+  entry: uv-to-pipfile
+  language: python
+  files: uv.lock
+  additional_dependencies:
+    - tomli

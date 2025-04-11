@@ -1,0 +1,43 @@
+ci:
+  skip: [hatch-test, taplo-lint]
+repos:
+  - repo: https://github.com/ComPWA/mirrors-taplo
+    rev: "v0.9.3"
+    hooks:
+      - id: taplo-format
+      - id: taplo-lint
+  - repo: https://github.com/asottile/reorder-python-imports
+    rev: v3.14.0
+    hooks:
+      - id: reorder-python-imports
+        args: [--py37-plus, --add-import, "from __future__ import annotations"]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.5
+    hooks:
+      - id: ruff
+        types_or: [python, pyi, jupyter]
+        args: [--fix, --unsafe-fixes]
+      - id: ruff-format
+        types_or: [python, pyi, jupyter]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: debug-statements
+      - id: name-tests-test
+      - id: requirements-txt-fixer
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+  - repo: local
+    hooks:
+      - id: hatch-test
+        name: hatch-test
+        entry: env HATCH_ENV_TYPE_VIRTUAL_PATH= hatch test --parallel --all
+        language: python
+        additional_dependencies: [hatch>=1.12.0]
+        pass_filenames: false
+        always_run: true
