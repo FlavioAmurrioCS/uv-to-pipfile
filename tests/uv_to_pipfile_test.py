@@ -5,7 +5,6 @@ import logging
 import os
 import shutil
 import subprocess
-import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -89,6 +88,7 @@ def test_foo() -> None:
             logging.error("Pipfile.lock comparison failed")  # noqa: LOG015, TRY400
             logging.error("code --diff /tmp/Pipfile.lock /tmp/Generated.Pipfile.lock")  # noqa: LOG015, TRY400
             raise
+
 
 def _sort_json_inplace(file: str) -> None:
     """
