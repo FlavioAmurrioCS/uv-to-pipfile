@@ -5,3 +5,4 @@
   language: python
   files: uv.lock
   always_run: true
+  pass_filenames: false
