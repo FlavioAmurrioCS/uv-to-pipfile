@@ -8,6 +8,7 @@ dependencies = [
   "dev-toolbox>=0.1.18",
   "httpx>=0.28.1",
   "requests",
+  "boto3-stubs[ec2,ecs]",
 ]
 
 [tool.uv.sources]

@@ -31,6 +31,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
 ]
+tests = [
+  "persistent-cache-decorator",
+  "uv",
+  "pipenv",
+]
 types = ["typing-extensions"]
 
 [project.urls]
@@ -50,7 +55,7 @@ version-file = "src/uv_to_pipfile/_version.py"
 
 [tool.hatch.envs.hatch-test]
 extra-dependencies = [
-  "uv-to-pipfile[types,dev]",
+  "uv-to-pipfile[types,dev,tests]",
 ]
 
 [tool.hatch.envs.types]
@@ -88,7 +93,7 @@ config-path = "none"
 pythonVersion = "3.8"
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
