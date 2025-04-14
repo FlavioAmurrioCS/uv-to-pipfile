@@ -33,6 +33,8 @@ dev = [
 ]
 tests = [
   "persistent-cache-decorator",
+  "uv",
+  "pipenv",
 ]
 types = ["typing-extensions"]
 

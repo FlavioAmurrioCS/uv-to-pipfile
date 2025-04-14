@@ -296,23 +296,6 @@ def main(args: list[str] | None = None) -> int:
     return 0
 
 
-# @app.command()
-# def sort_json(file: str):
-#     """
-#     Sort a JSON file.
-#     """
-#     with open(file, "r") as f:
-#         data = json.load(f)
-#     for name, package in data.get("default", {}).items():
-#         if "hashes" in package:
-#             package["hashes"].sort()
-#     for name, package in data.get("develop", {}).items():
-#         if "hashes" in package:
-#             package["hashes"].sort()
-#     output_file = "sorted_" + os.path.basename(file)
-#     with open(output_file, "w") as f:
-#         json.dump(data, f, indent=4, sort_keys=True)
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

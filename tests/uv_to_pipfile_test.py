@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -29,7 +30,7 @@ def compare_pipfile_locks(
     all_develop.discard("colorama")
 
     # Seems like the depending how the depedency is specifies in the metadata will affect how it
-    # gets listed in the section dependenciesself.
+    # gets listed in the section dependencies.
     all_develop.discard("requests")
 
     for key in all_default:
@@ -74,9 +75,32 @@ def test_foo() -> None:
         main(["--pipfile-lock", "Generate.Pipfile.lock"])
         with open("Generate.Pipfile.lock") as f:
             generated_pipfile_lock = json.load(f)
-        print(os.getcwd())
-        compare_pipfile_locks(
-            original,
-            generated_pipfile_lock,
-        )
-        time.sleep(1)
+        # print(os.getcwd())
+        try:
+            compare_pipfile_locks(
+                original,
+                generated_pipfile_lock,
+            )
+        except:
+            shutil.move("Pipfile.lock", "/tmp/Pipfile.lock")  # noqa: S108
+            shutil.move("Generate.Pipfile.lock", "/tmp/Generated.Pipfile.lock")  # noqa: S108
+            _sort_json_inplace("/tmp/Pipfile.lock")  # noqa: S108
+            _sort_json_inplace("/tmp/Generated.Pipfile.lock")  # noqa: S108
+            logging.error("Pipfile.lock comparison failed")  # noqa: LOG015, TRY400
+            logging.error("code --diff /tmp/Pipfile.lock /tmp/Generated.Pipfile.lock")  # noqa: LOG015, TRY400
+            raise
+
+def _sort_json_inplace(file: str) -> None:
+    """
+    Sort a JSON file.
+    """
+    with open(file) as f:
+        data = json.load(f)
+    for package in data.get("default", {}).values():
+        if "hashes" in package:
+            package["hashes"].sort()
+    for package in data.get("develop", {}).values():
+        if "hashes" in package:
+            package["hashes"].sort()
+    with open(file, "w") as f:
+        json.dump(data, f, indent=4, sort_keys=True)
