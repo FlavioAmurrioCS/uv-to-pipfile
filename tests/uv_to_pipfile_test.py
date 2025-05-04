@@ -8,6 +8,8 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pytest
+
 from tests.utils import extract_deps
 from tests.utils import work_in_temp_directory
 from uv_to_pipfile.uv_to_pipfile import main
@@ -37,8 +39,8 @@ def compare_pipfile_locks(
         assert key in generated["default"]
         original["default"][key].pop("markers", None)
         original["default"][key].pop("index", None)
-        _original_hashes: list[str] = original["default"][key].pop("hashes", [])  # pyright: ignore[reportAssignmentType]
-        _generated_hashes: list[str] = generated["default"][key].pop("hashes", [])  # pyright: ignore[reportAssignmentType]
+        _original_hashes: list[str] = original["default"][key].pop("hashes", [])
+        _generated_hashes: list[str] = generated["default"][key].pop("hashes", [])
         for h in _generated_hashes:
             assert h in _original_hashes
         assert original["default"][key] == generated["default"][key]
@@ -48,15 +50,22 @@ def compare_pipfile_locks(
         assert key in generated["develop"]
         original["develop"][key].pop("markers", None)
         original["develop"][key].pop("index", None)
-        _original_hashes = original["develop"][key].pop("hashes", [])  # pyright: ignore[reportAssignmentType]
-        _generated_hashes = generated["develop"][key].pop("hashes", [])  # pyright: ignore[reportAssignmentType]
+        _original_hashes = original["develop"][key].pop("hashes", [])
+        _generated_hashes = generated["develop"][key].pop("hashes", [])
         for h in _generated_hashes:
             assert h in _original_hashes
         assert original["develop"][key] == generated["develop"][key]
 
 
-def test_foo() -> None:
-    wd = Path(__file__).parent.joinpath("test_files", "variation1")
+@pytest.mark.parametrize(
+    "test_dir",
+    [
+        "variation1",
+        "variation2",
+    ],
+)
+def test_foo(test_dir: str) -> None:
+    wd = Path(__file__).parent.joinpath("test_files", test_dir)
     with work_in_temp_directory():
         shutil.copy(wd.joinpath("pyproject.toml"), ".")
         shutil.copy(wd.joinpath(".python-version"), ".")
@@ -65,7 +74,7 @@ def test_foo() -> None:
         extract_deps.cache_clear()
         original = extract_deps("pyproject.toml", content)
 
-        del os.environ["VIRTUAL_ENV"]
+        os.environ.pop("VIRTUAL_ENV", None)
 
         subprocess.run(  # noqa: S603
             ("uv", "lock"),

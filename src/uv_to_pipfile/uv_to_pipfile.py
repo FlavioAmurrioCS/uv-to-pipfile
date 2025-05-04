@@ -44,6 +44,9 @@ if TYPE_CHECKING:
     class VirtualSource(TypedDict):
         virtual: str
 
+    class EditableSource(TypedDict):
+        editable: str
+
     class Dependency(TypedDict):
         name: str
         marker: NotRequired[str]
@@ -92,7 +95,21 @@ if TYPE_CHECKING:
         },
     )
 
-    Package: TypeAlias = Union[RegistryPackage, GitPackage, VirtualPackage]
+    EditablePackage = TypedDict(
+        "EditablePackage",
+        {
+            "name": str,
+            "version": str,
+            "source": EditableSource,
+            "dependencies": NotRequired[List[Dependency]],
+            "dev-dependencies": NotRequired[DevDependencies],
+            "metadata": Metadata,
+        },
+    )
+
+    RootPackage: TypeAlias = Union[EditablePackage, VirtualPackage]
+
+    Package: TypeAlias = Union[RegistryPackage, GitPackage, RootPackage]
 
     UVLock = TypedDict(
         "UVLock",
@@ -103,6 +120,14 @@ if TYPE_CHECKING:
             "package": List[Package],
         },
     )
+
+
+def is_root_package(package: Package) -> TypeGuard[RootPackage]:
+    return is_virtual_package(package) or is_editable_package(package)
+
+
+def is_editable_package(package: Package) -> TypeGuard[EditablePackage]:
+    return "editable" in package["source"]
 
 
 def is_virtual_package(package: Package) -> TypeGuard[VirtualPackage]:
@@ -208,15 +233,15 @@ def python_version(uv_lock: str) -> str:
 
 def parse_packages(
     uv_lock: str,
-) -> tuple[dict[str, GitPackage], dict[str, RegistryPackage], VirtualPackage]:
+) -> tuple[dict[str, GitPackage], dict[str, RegistryPackage], RootPackage]:
     data: UVLock = load_toml(uv_lock)
     git_packages: dict[str, GitPackage] = {}
     registry_packages: dict[str, RegistryPackage] = {}
-    virtual_packages: dict[str, VirtualPackage] = {}
+    root_packages: dict[str, RootPackage] = {}
 
     for package in data["package"]:
-        if is_virtual_package(package):
-            virtual_packages[package["name"]] = package
+        if is_root_package(package):
+            root_packages[package["name"]] = package
         elif is_git_package(package):
             git_packages[package["name"]] = package
         elif is_registry_package(package):
@@ -224,10 +249,10 @@ def parse_packages(
         else:
             print(package)
 
-    if len(virtual_packages) != 1:
-        print(f"Expected exactly one virtual package, got {len(virtual_packages)}")
-    virtual_package = virtual_packages.popitem()[1]
-    return git_packages, registry_packages, virtual_package
+    if len(root_packages) != 1:
+        print(f"Expected exactly one root package, got {len(root_packages)}")
+    root_package = root_packages.popitem()[1]
+    return git_packages, registry_packages, root_package
 
 
 def get_sources(registry_packages: Iterable[RegistryPackage]) -> list[dict[str, Any]]:
@@ -238,7 +263,7 @@ def get_sources(registry_packages: Iterable[RegistryPackage]) -> list[dict[str, 
 def main(args: list[str] | None = None) -> int:
     uv_lock, pipfile_lock = parse_args(args)
 
-    git_packages, registry_packages, virtual_package = parse_packages(uv_lock)
+    git_packages, registry_packages, root_package = parse_packages(uv_lock)
     sources = get_sources(registry_packages.values())
 
     if len(sources) != 1:
@@ -256,36 +281,36 @@ def main(args: list[str] | None = None) -> int:
     }
 
     queue: deque[Dependency] = deque()
-    queue.extend(virtual_package["metadata"]["requires-dist"])
+    queue.extend(root_package["metadata"]["requires-dist"])
 
     while queue:
         dep = queue.popleft()
         dep_name = dep["name"]
         if dep_name in git_packages:
-            package = git_packages[dep_name]
-            pipfile_lock_data["default"][dep_name] = git_package_to_dict(package)
-            queue.extend(package.get("dependencies", []))
+            git_package = git_packages[dep_name]
+            pipfile_lock_data["default"][dep_name] = git_package_to_dict(git_package)
+            queue.extend(git_package.get("dependencies", []))
         elif dep_name in registry_packages:
-            package = registry_packages[dep_name]
-            pipfile_lock_data["default"][dep_name] = registry_package_to_dict(package)
-            queue.extend(package.get("dependencies", []))
-            for pkg in package.get("optional-dependencies", {}).values():
+            registry_package = registry_packages[dep_name]
+            pipfile_lock_data["default"][dep_name] = registry_package_to_dict(registry_package)
+            queue.extend(registry_package.get("dependencies", []))
+            for pkg in registry_package.get("optional-dependencies", {}).values():
                 queue.extend(pkg)
 
-    queue.extend(virtual_package["metadata"].get("requires-dev", {}).get("dev", []))
+    queue.extend(root_package["metadata"].get("requires-dev", {}).get("dev", []))
 
     while queue:
         dep = queue.popleft()
         dep_name = dep["name"]
         if dep_name in git_packages:
-            package = git_packages[dep_name]
-            pipfile_lock_data["develop"][dep_name] = git_package_to_dict(package)
-            queue.extend(package.get("dependencies", []))
+            git_package = git_packages[dep_name]
+            pipfile_lock_data["develop"][dep_name] = git_package_to_dict(git_package)
+            queue.extend(git_package.get("dependencies", []))
         elif dep_name in registry_packages:
-            package = registry_packages[dep_name]
-            pipfile_lock_data["develop"][dep_name] = registry_package_to_dict(package)
-            queue.extend(package.get("dependencies", []))
-            for pkg in package.get("optional-dependencies", {}).values():
+            registry_package = registry_packages[dep_name]
+            pipfile_lock_data["develop"][dep_name] = registry_package_to_dict(registry_package)
+            queue.extend(registry_package.get("dependencies", []))
+            for pkg in registry_package.get("optional-dependencies", {}).values():
                 queue.extend(pkg)
 
     with open(pipfile_lock, "w") as f:

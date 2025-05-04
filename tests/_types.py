@@ -71,7 +71,7 @@ if TYPE_CHECKING:
         "PipfileLock",
         {
             "_meta": PipfileLockMeta,
-            "default": dict[str, dict[str, str]],
-            "develop": dict[str, dict[str, str]],
+            "default": dict[str, dict[str, list[str]]],
+            "develop": dict[str, dict[str, list[str]]],
         },
     )
