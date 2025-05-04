@@ -250,7 +250,7 @@ def parse_packages(
             print(package)
 
     if len(root_packages) != 1:
-        print(f"Expected exactly one virtual package, got {len(root_packages)}")
+        print(f"Expected exactly one root package, got {len(root_packages)}")
     root_package = root_packages.popitem()[1]
     return git_packages, registry_packages, root_package
 
