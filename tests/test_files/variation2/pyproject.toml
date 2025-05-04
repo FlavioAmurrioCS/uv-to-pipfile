@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "foo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "dev-toolbox>=0.1.18",
+  "httpx>=0.28.1",
+  "requests",
+  "boto3-stubs[ec2,ecs]",
+]
+
+[tool.uv.sources]
+requests = { git = "https://github.com/psf/requests" }
+
+[dependency-groups]
+dev = [
+  "comma-cli>=2.0.6",
+  "ruff>=0.11.5",
+]
