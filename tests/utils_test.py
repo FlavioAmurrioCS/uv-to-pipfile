@@ -21,14 +21,19 @@ if TYPE_CHECKING:
 
 
 @contextlib.contextmanager
-def work_in_temp_directory() -> Generator[None, None, None]:
+def work_in_directory(tmp: str) -> Generator[None, None, None]:
     original_directory = os.getcwd()
-    with tempfile.TemporaryDirectory() as tmp:
-        try:
-            os.chdir(tmp)
-            yield
-        finally:
-            os.chdir(original_directory)
+    try:
+        os.chdir(tmp)
+        yield
+    finally:
+        os.chdir(original_directory)
+
+
+@contextlib.contextmanager
+def work_in_temp_directory() -> Generator[None, None, None]:
+    with tempfile.TemporaryDirectory() as tmp, work_in_directory(tmp):
+        yield
 
 
 @persistent_cache(hours=1)
