@@ -16,12 +16,11 @@ if os.getenv("GET_VENV") == "1":
     raise SystemExit(0)
 from collections import deque
 from typing import TYPE_CHECKING
-from typing import Iterable
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from typing import Any
     from typing import Final
-    from typing import List
     from typing import TypedDict
     from typing import Union
 
@@ -56,7 +55,7 @@ if TYPE_CHECKING:
     Metadata = TypedDict(
         "Metadata",
         {
-            "requires-dist": List[Dependency],
+            "requires-dist": list[Dependency],
             "requires-dev": NotRequired[dict[str, list[Dependency]]],
         },
     )
@@ -89,7 +88,7 @@ if TYPE_CHECKING:
             "name": str,
             "version": str,
             "source": VirtualSource,
-            "dependencies": NotRequired[List[Dependency]],
+            "dependencies": NotRequired[list[Dependency]],
             "dev-dependencies": NotRequired[DevDependencies],
             "metadata": Metadata,
         },
@@ -101,7 +100,7 @@ if TYPE_CHECKING:
             "name": str,
             "version": str,
             "source": EditableSource,
-            "dependencies": NotRequired[List[Dependency]],
+            "dependencies": NotRequired[list[Dependency]],
             "dev-dependencies": NotRequired[DevDependencies],
             "metadata": Metadata,
         },
@@ -117,7 +116,7 @@ if TYPE_CHECKING:
             "version": int,
             "revision": int,
             "requires-python": str,
-            "package": List[Package],
+            "package": list[Package],
         },
     )
 
