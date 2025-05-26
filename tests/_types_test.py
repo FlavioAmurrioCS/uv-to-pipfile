@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from typing_extensions import Literal
 
 if TYPE_CHECKING:
-    from typing import List
     from typing import TypedDict
     from typing import Union
 
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
             "description": str,
             "readme": str,
             "requires-python": str,
-            "dependencies": List[str],
+            "dependencies": list[str],
         },
     )
 
@@ -51,7 +50,7 @@ if TYPE_CHECKING:
     Pipfile = TypedDict(
         "Pipfile",
         {
-            "source": List[Source],
+            "source": list[Source],
             "packages": Packages,
             "dev-packages": Packages,
             "requires": Requires,
@@ -64,7 +63,7 @@ if TYPE_CHECKING:
             "hash": dict[str, str],
             "pipfile-spec": int,
             "requires": dict[Literal["python_version"], str],
-            "sources": List[Source],
+            "sources": list[Source],
         },
     )
     PipfileLock = TypedDict(  # noqa: UP013

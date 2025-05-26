@@ -8,15 +8,16 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Generator
 
 from persistent_cache.decorators import persistent_cache
 
 from uv_to_pipfile.uv_to_pipfile import load_toml
 
 if TYPE_CHECKING:
-    from tests._types import PipfileLock
-    from tests._types import PyProject
+    from collections.abc import Generator
+
+    from tests._types_test import PipfileLock
+    from tests._types_test import PyProject
 
 
 @contextlib.contextmanager

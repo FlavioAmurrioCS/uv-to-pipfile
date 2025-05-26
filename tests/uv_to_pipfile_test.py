@@ -10,12 +10,12 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.utils import extract_deps
-from tests.utils import work_in_temp_directory
+from tests.utils_test import extract_deps
+from tests.utils_test import work_in_temp_directory
 from uv_to_pipfile.uv_to_pipfile import main
 
 if TYPE_CHECKING:
-    from tests._types import PipfileLock
+    from tests._types_test import PipfileLock
 
 
 def compare_pipfile_locks(
