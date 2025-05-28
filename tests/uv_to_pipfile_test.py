@@ -120,7 +120,10 @@ def test_editable() -> None:
 
     import tempfile
 
-    with tempfile.TemporaryDirectory() as main_project_dir, tempfile.TemporaryDirectory() as sub_project_dir:  # noqa: E501
+    with (
+        tempfile.TemporaryDirectory() as main_project_dir,
+        tempfile.TemporaryDirectory() as sub_project_dir,
+    ):  # noqa: E501
         subprocess.run(("uv", "init", "--build-backend=hatch"), cwd=sub_project_dir, check=True)
         subprocess.run(("uv", "init", "--build-backend=hatch"), cwd=main_project_dir, check=True)
         subprocess.run(
