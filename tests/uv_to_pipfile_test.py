@@ -1,3 +1,4 @@
+# flake8: noqa: S603
 from __future__ import annotations
 
 import json
@@ -11,6 +12,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from tests.utils_test import extract_deps
+from tests.utils_test import work_in_directory
 from tests.utils_test import work_in_temp_directory
 from uv_to_pipfile.uv_to_pipfile import main
 
@@ -76,7 +78,7 @@ def test_foo(test_dir: str) -> None:
 
         os.environ.pop("VIRTUAL_ENV", None)
 
-        subprocess.run(  # noqa: S603
+        subprocess.run(
             ("uv", "lock"),
             check=True,
         )
@@ -120,7 +122,10 @@ def test_editable() -> None:
 
     import tempfile
 
-    with tempfile.TemporaryDirectory() as main_project_dir, tempfile.TemporaryDirectory() as sub_project_dir:  # noqa: E501
+    with (
+        tempfile.TemporaryDirectory() as main_project_dir,
+        tempfile.TemporaryDirectory() as sub_project_dir,
+    ):
         subprocess.run(("uv", "init", "--build-backend=hatch"), cwd=sub_project_dir, check=True)
         subprocess.run(("uv", "init", "--build-backend=hatch"), cwd=main_project_dir, check=True)
         subprocess.run(

@@ -16,6 +16,7 @@ if os.getenv("GET_VENV") == "1":
     raise SystemExit(0)
 from collections import deque
 from typing import TYPE_CHECKING
+from typing import NamedTuple
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -169,7 +170,7 @@ def git_package_to_dict(package: GitPackage) -> dict[str, Any]:
 def editable_package_to_dict(package: EditablePackage) -> dict[str, Any]:
     return {
         "editable": True,
-        "file": os.path.relpath(os.path.realpath(package["source"]["editable"]), os.getcwd()),
+        "path": os.path.relpath(os.path.realpath(package["source"]["editable"]), os.getcwd()),
     }
 
 
@@ -286,7 +287,7 @@ def get_sources(registry_packages: Iterable[RegistryPackage]) -> list[dict[str, 
     return [{"name": registry, "url": registry, "verify_ssl": True} for registry in registries]
 
 
-def main(args: list[str] | None = None) -> int:
+def main(args: list[str] | None = None) -> int:  # noqa: C901, PLR0912, PLR0915
     uv_lock, pipfile_lock = parse_args(args)
 
     parsed_packages = parse_packages(uv_lock)
@@ -319,9 +320,14 @@ def main(args: list[str] | None = None) -> int:
     if is_editable_package(root_package):
         pipfile_lock_data["default"][root_package["name"]] = editable_package_to_dict(root_package)
 
+    cumulative_dependencies = set()
+
     while queue:
         dep = queue.popleft()
         dep_name = dep["name"]
+        if dep_name in cumulative_dependencies:
+            continue
+        cumulative_dependencies.add(dep_name)
         if dep_name in git_packages:
             git_package = git_packages[dep_name]
             pipfile_lock_data["default"][dep_name] = git_package_to_dict(git_package)
@@ -334,14 +340,18 @@ def main(args: list[str] | None = None) -> int:
                 queue.extend(pkg)
         elif dep_name in editable_packages:
             editable_package = editable_packages[dep_name]
-            pipfile_lock_data["default"][dep_name] = editable_package_to_dict(editable_package)  # type: ignore
+            pipfile_lock_data["default"][dep_name] = editable_package_to_dict(editable_package)
             queue.extend(editable_package.get("dependencies", []))
 
     queue.extend(root_package["metadata"].get("requires-dev", {}).get("dev", []))
 
+    cumulative_dependencies = set()
     while queue:
         dep = queue.popleft()
         dep_name = dep["name"]
+        if dep_name in cumulative_dependencies:
+            continue
+        cumulative_dependencies.add(dep_name)
         if dep_name in git_packages:
             git_package = git_packages[dep_name]
             pipfile_lock_data["develop"][dep_name] = git_package_to_dict(git_package)
