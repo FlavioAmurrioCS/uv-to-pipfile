@@ -1,3 +1,4 @@
+# flake8: noqa: S603
 from __future__ import annotations
 
 import json
@@ -11,6 +12,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from tests.utils_test import extract_deps
+from tests.utils_test import work_in_directory
 from tests.utils_test import work_in_temp_directory
 from uv_to_pipfile.uv_to_pipfile import main
 
@@ -76,7 +78,7 @@ def test_foo(test_dir: str) -> None:
 
         os.environ.pop("VIRTUAL_ENV", None)
 
-        subprocess.run(  # noqa: S603
+        subprocess.run(
             ("uv", "lock"),
             check=True,
         )
@@ -113,3 +115,45 @@ def _sort_json_inplace(file: str) -> None:
             package["hashes"].sort()
     with open(file, "w") as f:
         json.dump(data, f, indent=4, sort_keys=True)
+
+
+def test_editable() -> None:
+    os.environ.pop("VIRTUAL_ENV", None)
+
+    import tempfile
+
+    with (
+        tempfile.TemporaryDirectory() as main_project_dir,
+        tempfile.TemporaryDirectory() as sub_project_dir,
+    ):
+        subprocess.run(("uv", "init", "--build-backend=hatch"), cwd=sub_project_dir, check=True)
+        subprocess.run(("uv", "init", "--build-backend=hatch"), cwd=main_project_dir, check=True)
+        subprocess.run(
+            ("pipenv", "install", "--editable", main_project_dir), cwd=main_project_dir, check=True
+        )
+        subprocess.run(
+            ("pipenv", "install", "--editable", sub_project_dir), cwd=main_project_dir, check=True
+        )
+
+        subprocess.run(
+            ("uv", "add", "--editable", sub_project_dir), cwd=main_project_dir, check=True
+        )
+        with work_in_directory(main_project_dir):
+            with open("Pipfile.lock") as f:
+                original = json.load(f)
+            main(["--pipfile-lock=Generate.Pipfile.lock"])
+            with open("Generate.Pipfile.lock") as f:
+                generated_pipfile_lock = json.load(f)
+            try:
+                compare_pipfile_locks(
+                    original,
+                    generated_pipfile_lock,
+                )
+            except:
+                shutil.move("Pipfile.lock", "/tmp/Pipfile.lock")  # noqa: S108
+                shutil.move("Generate.Pipfile.lock", "/tmp/Generated.Pipfile.lock")  # noqa: S108
+                _sort_json_inplace("/tmp/Pipfile.lock")  # noqa: S108
+                _sort_json_inplace("/tmp/Generated.Pipfile.lock")  # noqa: S108
+                logging.error("Pipfile.lock comparison failed")  # noqa: LOG015, TRY400
+                logging.error("code --diff /tmp/Pipfile.lock /tmp/Generated.Pipfile.lock")  # noqa: LOG015, TRY400
+                raise

@@ -16,6 +16,7 @@ if os.getenv("GET_VENV") == "1":
     raise SystemExit(0)
 from collections import deque
 from typing import TYPE_CHECKING
+from typing import NamedTuple
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -122,7 +123,7 @@ if TYPE_CHECKING:
 
 
 def is_root_package(package: Package) -> TypeGuard[RootPackage]:
-    return is_virtual_package(package) or is_editable_package(package)
+    return (is_virtual_package(package) or is_editable_package(package)) and "metadata" in package
 
 
 def is_editable_package(package: Package) -> TypeGuard[EditablePackage]:
@@ -163,6 +164,13 @@ def git_package_to_dict(package: GitPackage) -> dict[str, Any]:
     return {
         "git": git,
         "ref": ref,
+    }
+
+
+def editable_package_to_dict(package: EditablePackage) -> dict[str, Any]:
+    return {
+        "editable": True,
+        "path": os.path.relpath(os.path.realpath(package["source"]["editable"]), os.getcwd()),
     }
 
 
@@ -230,13 +238,23 @@ def python_version(uv_lock: str) -> str:
     return "3.11"
 
 
+class ParsedPackages(NamedTuple):
+    git_packages: dict[str, GitPackage]
+    registry_packages: dict[str, RegistryPackage]
+    root_package: RootPackage
+    editable_packages: dict[str, EditablePackage]
+    virtual_packages: dict[str, VirtualPackage]
+
+
 def parse_packages(
     uv_lock: str,
-) -> tuple[dict[str, GitPackage], dict[str, RegistryPackage], RootPackage]:
+) -> ParsedPackages:
     data: UVLock = load_toml(uv_lock)
     git_packages: dict[str, GitPackage] = {}
     registry_packages: dict[str, RegistryPackage] = {}
     root_packages: dict[str, RootPackage] = {}
+    editable_packages: dict[str, EditablePackage] = {}
+    virtual_packages: dict[str, VirtualPackage] = {}
 
     for package in data["package"]:
         if is_root_package(package):
@@ -245,13 +263,23 @@ def parse_packages(
             git_packages[package["name"]] = package
         elif is_registry_package(package):
             registry_packages[package["name"]] = package
+        elif is_editable_package(package):
+            editable_packages[package["name"]] = package
+        elif is_virtual_package(package):
+            virtual_packages[package["name"]] = package
         else:
             print(package)
 
     if len(root_packages) != 1:
         print(f"Expected exactly one root package, got {len(root_packages)}")
     root_package = root_packages.popitem()[1]
-    return git_packages, registry_packages, root_package
+    return ParsedPackages(
+        git_packages=git_packages,
+        registry_packages=registry_packages,
+        root_package=root_package,
+        editable_packages=editable_packages,
+        virtual_packages=virtual_packages,
+    )
 
 
 def get_sources(registry_packages: Iterable[RegistryPackage]) -> list[dict[str, Any]]:
@@ -259,11 +287,19 @@ def get_sources(registry_packages: Iterable[RegistryPackage]) -> list[dict[str, 
     return [{"name": registry, "url": registry, "verify_ssl": True} for registry in registries]
 
 
-def main(args: list[str] | None = None) -> int:
+def main(args: list[str] | None = None) -> int:  # noqa: C901, PLR0912, PLR0915
     uv_lock, pipfile_lock = parse_args(args)
 
-    git_packages, registry_packages, root_package = parse_packages(uv_lock)
-    sources = get_sources(registry_packages.values())
+    parsed_packages = parse_packages(uv_lock)
+    git_packages = parsed_packages.git_packages
+    registry_packages = parsed_packages.registry_packages
+    root_package = parsed_packages.root_package
+    editable_packages = parsed_packages.editable_packages
+    # virtual_packages = parsed_packages.virtual_packages
+
+    sources = get_sources(registry_packages.values()) or [
+        {"name": "default", "url": "https://pypi.org/simple", "verify_ssl": True}
+    ]
 
     if len(sources) != 1:
         print(f"Expected exactly one registry, got {len(sources)}")
@@ -281,10 +317,17 @@ def main(args: list[str] | None = None) -> int:
 
     queue: deque[Dependency] = deque()
     queue.extend(root_package["metadata"]["requires-dist"])
+    if is_editable_package(root_package):
+        pipfile_lock_data["default"][root_package["name"]] = editable_package_to_dict(root_package)
+
+    cumulative_dependencies = set()
 
     while queue:
         dep = queue.popleft()
         dep_name = dep["name"]
+        if dep_name in cumulative_dependencies:
+            continue
+        cumulative_dependencies.add(dep_name)
         if dep_name in git_packages:
             git_package = git_packages[dep_name]
             pipfile_lock_data["default"][dep_name] = git_package_to_dict(git_package)
@@ -295,12 +338,20 @@ def main(args: list[str] | None = None) -> int:
             queue.extend(registry_package.get("dependencies", []))
             for pkg in registry_package.get("optional-dependencies", {}).values():
                 queue.extend(pkg)
+        elif dep_name in editable_packages:
+            editable_package = editable_packages[dep_name]
+            pipfile_lock_data["default"][dep_name] = editable_package_to_dict(editable_package)
+            queue.extend(editable_package.get("dependencies", []))
 
     queue.extend(root_package["metadata"].get("requires-dev", {}).get("dev", []))
 
+    cumulative_dependencies = set()
     while queue:
         dep = queue.popleft()
         dep_name = dep["name"]
+        if dep_name in cumulative_dependencies:
+            continue
+        cumulative_dependencies.add(dep_name)
         if dep_name in git_packages:
             git_package = git_packages[dep_name]
             pipfile_lock_data["develop"][dep_name] = git_package_to_dict(git_package)
@@ -311,6 +362,10 @@ def main(args: list[str] | None = None) -> int:
             queue.extend(registry_package.get("dependencies", []))
             for pkg in registry_package.get("optional-dependencies", {}).values():
                 queue.extend(pkg)
+        elif dep_name in editable_packages:
+            editable_package = editable_packages[dep_name]
+            pipfile_lock_data["develop"][dep_name] = editable_package_to_dict(editable_package)
+            queue.extend(editable_package.get("dependencies", []))
 
     with open(pipfile_lock, "w") as f:
         import json
