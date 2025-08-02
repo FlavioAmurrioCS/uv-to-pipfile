@@ -30,14 +30,20 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-types = [
-  "typing-extensions",
-]
 tests = [
-  "uv-to-pipfile[types]",
+  "pytest",
+  "tomli ; python_version < '3.11'",
   "persistent-cache-decorator",
   "uv",
   "pipenv",
+]
+types = [
+  "uv-to-pipfile[tests]",
+  "typing-extensions",
+  "mypy",
+  "pyrefly",
+  "pyright[nodejs]",
+  "ty",
 ]
 
 [project.urls]
@@ -70,6 +76,16 @@ extra-dependencies = [
 
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:src/uv_to_pipfile tests}"
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = [
+  "3.9",
+  "3.10",
+  "3.11",
+  "3.12",
+  "3.13",
+  "3.14",
+]
 ###############################################################################
 # endregion: hatch
 ###############################################################################
@@ -149,13 +165,14 @@ select = [
   "ALL",
 ]
 ignore = [
-  "COM812", # missing-trailing-comma
-  "D",      # pydocstyle
-  "ERA001", # commented-out-code
-  "EXE003", # shebang-missing-python
-  "ISC001", # single-line-implicit-string-concatenation
-  "PTH",    # flake8-use-pathlib
-  "T20",    # flake8-print
+  "COM812",  # missing-trailing-comma
+  "D",       # pydocstyle
+  "ERA001",  # commented-out-code
+  "EXE003",  # shebang-missing-python
+  "ISC001",  # single-line-implicit-string-concatenation
+  "PTH",     # flake8-use-pathlib
+  "T20",     # flake8-print
+  "PLC0415", # import-outside-top-level
 ]
 
 [tool.ruff.format]
