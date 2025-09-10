@@ -1,9 +1,11 @@
 {
   "project_name": "uv-to-pipfile",
-  "project_slug": "uv_to_pipfile",
+  "package_name": "uv-to-pipfile",
+  "module_name": "uv_to_pipfile",
   "project_short_description": "A tool to convert uv.lock files to Pipfile.lock.",
   "minimum_python_version": "3.9",
   "full_name": "Flavio Amurrio",
   "email": "25621374+FlavioAmurrioCS@users.noreply.github.com",
-  "github_username": "FlavioAmurrioCS"
+  "github_username": "FlavioAmurrioCS",
+  "project_slug": "uv_to_pipfile"
 }
