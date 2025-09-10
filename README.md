@@ -30,7 +30,7 @@ Add this to your `.pre-commit-config.yaml`:
 
 ```yaml
 -   repo: https://github.com/FlavioAmurrioCS/uv-to-pipfile
-    rev: v0.0.6  # Use the ref you want to point at
+    rev: v0.0.7  # Use the ref you want to point at
     hooks:
     -   id: uv-to-pipfile
 ```

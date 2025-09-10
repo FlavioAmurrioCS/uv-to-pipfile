@@ -201,7 +201,7 @@ def parse_requirements(requirements_txt: str) -> tuple[dict[str, PipenvPackage],
                     name, extras = line.strip("]").split("[", maxsplit=1)
                 pkg = {
                     "hashes": hashes,
-                    "version": version,
+                    "version": f"=={version}",
                 }
 
             if markers:
