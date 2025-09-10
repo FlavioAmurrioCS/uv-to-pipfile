@@ -138,7 +138,7 @@ def get_index_url(cwd: str) -> str | None:
     return None
 
 
-def parse_requirements(requirements_txt: str) -> tuple[dict[str, PipenvPackage], str]:  # noqa: C901
+def parse_requirements(requirements_txt: str) -> tuple[dict[str, PipenvPackage], str]:  # noqa: C901, PLR0912, PLR0915
     ret: dict[str, PipenvPackage] = {}
     _index = ""
     with open(requirements_txt) as f:
