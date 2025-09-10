@@ -27,6 +27,7 @@ classifiers = [
 ]
 dependencies = [
   "tomli>=1.1.0 ; python_full_version < '3.11'",
+  "uv",
 ]
 
 [project.optional-dependencies]
@@ -52,7 +53,7 @@ Issues = "https://github.com/FlavioAmurrioCS/uv-to-pipfile/issues"
 Source = "https://github.com/FlavioAmurrioCS/uv-to-pipfile"
 
 [project.scripts]
-uv-to-pipfile = "uv_to_pipfile.uv_to_pipfile:main"
+uv-to-pipfile = "uv_to_pipfile.uv_to_pipfile2:main"
 
 ###############################################################################
 # region: hatch
